@@ -1,0 +1,806 @@
+
+
+
+
+
+
+
+
+ALL-SWITCH-Common:
+Enable secret 3semNET!
+Username admin secret 3semNET!
+snmp-server community ITEK3sem RO
+vtp mode transparent
+snmp-server contact G3@students.eaaa.dk
+no ip domain lookup 
+ip domain-name g3_firma.com
+crypto key generate rsa modulus 2048
+ip ssh version 2
+line con 0
+ login local
+ no privilege level
+ exec-timeout 0 0
+ logging synchronous
+line aux 0
+ no privilege level
+ exec-timeout 0 0
+ logging synchronous
+line vty 0 4
+ no privilege level
+ exec-timeout 0 0
+ logging synchronous
+ login local
+ transport input ssh
+ exit
+ 
+ 
+
+vlan 10 
+name IT
+
+vlan 20
+name Finance
+
+vlan 30
+name R&D
+
+vlan 40
+name Adminstration
+
+vlan 50
+name Sales
+
+vlan 60
+name Office_Devices
+
+vlan 70
+name Security
+
+Vlan 80
+name Guest 
+
+vlan 90
+name Warehouse
+
+vlan 100
+name Prodction
+
+vlan 3031
+name ServerLAN
+
+spanning-tree mode rapid-pvst
+
+
+#################################################
+
+ L3switch common:
+ ip dhcp excluded-address 10.131.10.1 10.131.10.50
+ ip dhcp excluded-address 10.131.20.1 10.131.20.50
+ ip dhcp excluded-address 10.131.30.1 10.131.30.50
+ ip dhcp excluded-address 10.131.40.1 10.131.40.50
+ ip dhcp excluded-address 10.131.50.1 10.131.50.50
+ ip dhcp excluded-address 10.131.80.1 10.131.80.50
+ ip dhcp excluded-address 10.131.90.1 10.131.90.50
+ ip dhcp excluded-address 10.131.100.1 10.131.100.50
+ 
+
+ 
+  ip dhcp pool IT 
+ network 10.131.10.0 255.255.255.0
+ default-router 10.131.10.1
+ dns-server 10.130.31.100 8.8.8.8
+ lease 1 
+ exit
+ 
+   ip dhcp pool Finance 
+ network 10.131.20.0 255.255.255.0
+ default-router 10.131.20.1
+ dns-server 10.130.31.100 8.8.8.8
+ lease 1 
+ exit
+ 
+   ip dhcp pool R&D 
+ network 10.131.30.0 255.255.255.0
+ default-router 10.131.30.1
+ dns-server 10.130.31.100 8.8.8.8
+ lease 1 
+ exit
+ 
+   ip dhcp pool Adminstration
+ network 10.131.40.0 255.255.255.0
+ default-router 10.131.40.1
+ dns-server 10.130.31.100 8.8.8.8
+ lease 1 
+ exit 
+ 
+    ip dhcp pool Sales
+ network 10.131.50.0 255.255.255.0
+ default-router 10.131.50.1
+ dns-server 10.130.31.100 8.8.8.8
+ lease 1 
+ exit 
+ 
+     ip dhcp pool Guest
+ network 10.131.80.0 255.255.255.0
+ default-router 10.131.80.1
+ dns-server 10.130.31.100 8.8.8.8
+ lease 1 
+ exit 
+ 
+    ip dhcp pool Warehouse
+ network 10.131.90.0 255.255.255.0
+ default-router 10.131.90.1
+ dns-server 10.130.31.100 8.8.8.8
+ lease 1 
+ exit 
+ 
+     ip dhcp pool Production
+ network 10.131.100.0 255.255.255.0
+ default-router 10.131.100.1
+ dns-server 10.130.31.100 8.8.8.8
+ lease 1 
+ exit 
+ 
+ 
+#################################################
+
+
+
+G3-MAIN-SW1:
+
+hostname G3-MAIN-SW1
+
+
+snmp-server chassis-id G3-MAIN-SW1
+int loopback0 
+ip address 1.1.1.1 255.255.255.255
+
+interface gig2/3
+description To_G3-pfSense
+switchport trunk encapsulation dot1q
+switchport mode trunk
+switchport trunk allowed vlan 10,20,30,40,50,80,3031
+switchport trunk native vlan 3031
+no negotiation auto
+no cdp enable
+spanning-tree bpdufilter enable
+
+interface gig3/0
+description To_G3-ASW-WAREHOUSE
+switchport trunk encapsulation dot1q
+switchport mode trunk
+switchport trunk allowed vlan 10,20,30,40,50,60,70,80,90,100,3031
+switchport trunk native vlan 60
+no negotiation auto
+no spanning-tree portfast
+no spanning-tree bpduguard enable
+
+interface range gig0/0 
+description To_G3-Active-Directory
+switchport mode access
+switchport access vlan 3031
+spanning-tree portfast
+spanning-tree bpduguard enable
+no cdp enable
+
+interface range gig0/1 
+description To_G3-Zabbix
+switchport mode access
+switchport access vlan 3031
+spanning-tree portfast
+spanning-tree bpduguard enable
+no cdp enable
+
+
+
+interface gig3/1
+description To_G3-ASW-FINANCE
+switchport trunk encapsulation dot1q
+switchport mode trunk
+switchport trunk allowed vlan 10,20,30,40,50,60,70,80,90,100,3031
+switchport trunk native vlan 60
+no negotiation auto
+no spanning-tree portfast
+no spanning-tree bpduguard enable
+
+
+interface range g3/2 - 3
+channel-group 1 mode on
+
+
+
+interface po1 
+description To_G3-MAIN-SW2
+switchport trunk encapsulation dot1q
+switchport mode trunk
+switchport trunk allowed vlan 10,20,30,40,50,60,70,80,90,100,3031
+switchport trunk native vlan 60
+no negotiation auto
+no spanning-tree portfast
+no spanning-tree bpduguard enable
+
+
+spanning-tree mode rapid-pvst
+spanning-tree vlan 10,20,30,40,50,3031 root primary
+spanning-tree vlan 60,70,80,90,100 root secondary
+
+
+int vlan 10
+description IT_GW
+ip add 10.131.10.2 255.255.255.0
+vrrp 10 ip 10.131.10.1
+vrrp 10 priority 110
+vrrp 10 track 1 decrement 20
+ip ospf 1 area 0
+no shutdown
+
+int vlan 20
+description Finance_GW
+ip add 10.131.20.2 255.255.255.0
+vrrp 20 ip 10.131.20.1
+vrrp 20 priority 110
+vrrp 20 track 1 decrement 20
+ip ospf 1 area 0
+no shutdown
+
+int vlan 30
+description R&D_GW
+ip add 10.131.30.2 255.255.255.0
+vrrp 30 ip 10.131.30.1
+vrrp 30 priority 110
+vrrp 30 track 1 decrement 20
+ip ospf 1 area 0
+no shutdown
+
+int vlan 40
+description Adminstration_GW
+ip add 10.131.40.2 255.255.255.0
+vrrp 40 ip 10.131.40.1
+vrrp 40 priority 110
+vrrp 40 track 1 decrement 20
+ip ospf 1 area 0
+no shutdown
+
+int vlan 50
+description Sales_GW
+ip add 10.131.50.2 255.255.255.0
+vrrp 50 ip 10.131.50.1
+vrrp 50 priority 110
+vrrp 50 track 1 decrement 20
+ip ospf 1 area 0
+no shutdown
+
+int vlan 60
+description Office_Devices_GW
+ip add 10.131.60.2 255.255.255.0
+vrrp 60 ip 10.131.60.1
+vrrp 60 track 1 decrement 20
+ip ospf 1 area 0
+no shutdown
+
+int vlan 70
+description Security_GW
+ip add 10.131.70.2 255.255.255.0
+vrrp 70 ip 10.131.70.1
+vrrp 70 track 1 decrement 20
+ip ospf 1 area 0
+no shutdown
+
+int vlan 80
+description Guest_GW
+ip add 10.131.80.2 255.255.255.0
+vrrp 80 ip 10.131.80.1
+vrrp 80 track 1 decrement 20
+ip ospf 1 area 0
+no shutdown
+
+
+int vlan 3031
+description ServerLAN_SVI
+ip add 10.130.31.2 255.255.255.0
+vrrp 31 ip 10.130.31.1
+vrrp 31 priority 110
+vrrp 31 track 1 decrement 2
+ip ospf 1 area 0
+no shutdown
+
+int vlan 90
+description Warehouse_GW
+ip add 10.131.90.2 255.255.255.0
+vrrp 90 ip 10.131.90.1
+vrrp 90 track 1 decrement 20
+ip ospf 1 area 0
+no shutdown
+
+int vlan 100
+description Production_GW
+ip add 10.131.100.2 255.255.255.0
+vrrp 100 ip 10.131.100.1
+vrrp 100 track 1 decrement 20
+ip ospf 1 area 0
+no shutdown
+
+ip route 0.0.0.0 0.0.0.0 10.130.31.10
+router ospf 1
+default-information originate 
+
+
+#################################################
+
+G3-ASW-FINANCE:
+
+hostname G3-ASW-FINANCE
+snmp-server chassis-id G3-ASW-FINANCE
+
+spanning-tree mode rapid-pvst
+
+
+interface gig3/3
+description To_G3-MAIN-SW1
+switchport trunk encapsulation dot1q
+switchport mode trunk
+switchport trunk allowed vlan 10,20,30,40,50,60,70,80,90,100,3031
+switchport trunk native vlan 60
+no negotiation auto
+no spanning-tree portfast
+no spanning-tree bpduguard enable
+
+
+interface gig3/2
+description To_G3-ASW-ADMINSTRATION
+switchport trunk encapsulation dot1q
+switchport mode trunk
+switchport trunk allowed vlan 10,20,30,40,50,60,70,80,90,100,3031
+switchport trunk native vlan 60
+no negotiation auto
+no spanning-tree portfast
+no spanning-tree bpduguard enable
+
+
+interface range gig0/0 - 3
+description IT
+switchport mode access
+switchport access vlan 10
+spanning-tree portfast
+spanning-tree bpduguard enable
+no cdp enable
+
+interface range gig1/0 - 3
+description Finance
+switchport mode access
+switchport access vlan 20
+spanning-tree portfast
+spanning-tree bpduguard enable
+no cdp enable
+
+interface range gig2/0 - 3
+description Office_Devices
+switchport mode access
+switchport access vlan 60
+spanning-tree portfast
+spanning-tree bpduguard enable
+no cdp enable
+
+
+ip default-gateway 10.130.31.1
+interface vlan 3031
+description ServerLAN_SVI
+ip address 10.130.31.4 255.255.255.0
+no shutdown
+
+
+#######################################################
+
+
+
+G3-ASW-ADMINSTRATION:
+
+hostname G3-ASW-ADMINSTRATION
+snmp-server chassis-id G3-ASW-ADMINSTRATION
+
+spanning-tree mode rapid-pvst
+
+
+interface gig3/3
+description To_G3-ASW-FINANCE
+switchport trunk encapsulation dot1q
+switchport mode trunk
+switchport trunk allowed vlan 10,20,30,40,50,60,70,80,90,100,3031
+switchport trunk native vlan 60
+no negotiation auto
+no spanning-tree portfast
+no spanning-tree bpduguard enable
+
+
+interface gig3/2
+description To_G3-ASW-SALES
+switchport trunk encapsulation dot1q
+switchport mode trunk
+switchport trunk allowed vlan 10,20,30,40,50,60,70,80,90,100,3031
+switchport trunk native vlan 60
+no negotiation auto
+no spanning-tree portfast
+no spanning-tree bpduguard enable
+
+
+interface range gig0/0 - 3
+description R&D
+switchport mode access
+switchport access vlan 30
+spanning-tree portfast
+spanning-tree bpduguard enable
+no cdp enable
+
+interface range gig1/0 - 3
+description Adminstration
+switchport mode access
+switchport access vlan 40
+spanning-tree portfast
+spanning-tree bpduguard enable
+no cdp enable
+
+interface range gig2/0 - 3
+description Office_Devices
+switchport mode access
+switchport access vlan 60
+spanning-tree portfast
+spanning-tree bpduguard enable
+no cdp enable
+
+
+
+
+
+ip default-gateway 10.130.31.1
+interface vlan 3031
+description ServerLAN_SVI
+ip address 10.130.31.5 255.255.255.0
+no shutdown
+
+#######################################################
+
+
+G3-ASW-SALES:
+
+hostname G3-ASW-SALES
+snmp-server chassis-id G3-ASW-SALES
+
+spanning-tree mode rapid-pvst
+
+
+interface gig3/3
+description To_G3-MAIN-SW2
+switchport trunk encapsulation dot1q
+switchport mode trunk
+switchport trunk allowed vlan 10,20,30,40,50,60,70,80,90,100,3031
+switchport trunk native vlan 60
+no negotiation auto
+no spanning-tree portfast
+no spanning-tree bpduguard enable
+
+
+interface gig3/2
+description To_G3-ASW-ADMINSTRATION
+switchport trunk encapsulation dot1q
+switchport mode trunk
+switchport trunk allowed vlan 10,20,30,40,50,60,70,80,90,100,3031
+switchport trunk native vlan 60
+no negotiation auto
+no spanning-tree portfast
+no spanning-tree bpduguard enable
+
+interface range gig0/0 - 3
+description Sales
+switchport mode access
+switchport access vlan 50
+spanning-tree portfast
+spanning-tree bpduguard enable
+no cdp enable
+
+interface range gig1/0 - 3
+description Sales
+switchport mode access
+switchport access vlan 50
+spanning-tree portfast
+spanning-tree bpduguard enable
+no cdp enable
+
+interface range gig2/0 - 3
+description Office_Devices
+switchport mode access
+switchport access vlan 60
+spanning-tree portfast
+spanning-tree bpduguard enable
+no cdp enable
+
+
+
+ip default-gateway 10.130.31.1
+interface vlan 3031
+description ServerLAN_SVI
+ip address 10.130.31.6 255.255.255.0
+no shutdown
+
+
+#################################################
+
+G3-MAIN-SW2:
+
+snmp-server chassis-id G3-MAIN-SW2
+hostname G3-MAIN-SW2
+
+spanning-tree mode rapid-pvst
+
+
+
+int loopback0 
+ip add 2.2.2.2 255.255.255.255
+
+
+interface gig3/0
+description To_G3-ASW-PRODUCTION
+switchport trunk encapsulation dot1q
+switchport mode trunk
+switchport trunk allowed vlan 10,20,30,40,50,60,70,80,90,100,3031
+switchport trunk native vlan 60
+no negotiation auto
+no spanning-tree portfast
+no spanning-tree bpduguard enable
+
+
+interface gig3/1
+description To_G3-ASW-SALES
+switchport trunk encapsulation dot1q
+switchport mode trunk
+switchport trunk allowed vlan 10,20,30,40,50,60,70,80,90,100,3031
+switchport trunk native vlan 60
+no negotiation auto
+no spanning-tree portfast
+no spanning-tree bpduguard enable
+
+int range g3/2 - 3
+channel-group 1 mode on
+
+int po1 
+description To_G3-MAIN-SW1
+switchport trunk encapsulation dot1q
+switchport mode trunk
+switchport trunk allowed vlan 10,20,30,40,50,60,70,80,90,100,3031
+switchport trunk native vlan 60
+no negotiation auto
+no spanning-tree portfast
+no spanning-tree bpduguard enable
+
+
+spanning-tree mode rapid-pvst
+spanning-tree vlan 60,70,80,90,100 root primary
+spanning-tree vlan 10,20,30,40,50,3031 root secondary
+
+
+int vlan 10
+description IT_GW
+ip add 10.131.10.3 255.255.255.0
+vrrp 10 ip 10.131.10.1
+vrrp 10 track 1 decrement 20
+ip ospf 1 area 0
+no shutdown
+
+int vlan 20
+description Finance_GW
+ip add 10.131.20.3 255.255.255.0
+vrrp 20 ip 10.131.20.1
+vrrp 20 track 1 decrement 20
+ip ospf 1 area 0
+no shutdown
+
+int vlan 30
+description R&D_GW
+ip add 10.131.30.3 255.255.255.0
+vrrp 30 ip 10.131.30.1
+vrrp 30 track 1 decrement 20
+ip ospf 1 area 0
+
+no shutdown
+
+int vlan 40
+description Adminstration_GW
+ip add 10.131.40.3 255.255.255.0
+vrrp 40 ip 10.131.40.1
+vrrp 40 track 1 decrement 20
+ip ospf 1 area 0
+no shutdown
+
+int vlan 50
+description Sales_GW
+ip add 10.131.50.3 255.255.255.0
+vrrp 50 ip 10.131.50.1
+vrrp 50 track 1 decrement 20
+ip ospf 1 area 0
+no shutdown
+
+int vlan 60
+description Office_Devices_GW
+ip add 10.131.60.3 255.255.255.0
+vrrp 60 ip 10.131.60.1
+vrrp 60 priority 110
+vrrp 60 track 1 decrement 20
+ip ospf 1 area 0
+no shutdown
+
+int vlan 70
+description Security_GW
+ip add 10.131.70.3 255.255.255.0
+vrrp 70 ip 10.131.70.1
+vrrp 70 priority 110
+vrrp 70 track 1 decrement 20
+ip ospf 1 area 0
+no shutdown
+
+int vlan 80
+description Guest_GW
+ip add 10.131.80.3 255.255.255.0
+vrrp 80 ip 10.131.80.1
+vrrp 80 priority 110
+vrrp 80 track 1 decrement 20
+ip ospf 1 area 0
+no shutdown
+
+int vlan 3031
+description ServerLAN_SVI
+ip add 10.130.31.3 255.255.255.0
+vrrp 31 ip 10.130.31.1
+vrrp 31 track 1 decrement 20
+ip ospf 1 area 0
+no shutdown
+
+int vlan 90
+description Warehouse_GW
+ip add 10.131.90.3 255.255.255.0
+vrrp 90 ip 10.131.90.1
+vrrp 90 priority 110
+vrrp 90 track 1 decrement 20
+ip ospf 1 area 0
+no shutdown
+
+int vlan 100
+description Production_GW
+ip add 10.131.100.3 255.255.255.0
+vrrp 100 ip 10.131.100.1
+vrrp 100 priority 100
+vrrp 100 track 1 decrement 20
+ip ospf 1 area 0
+no shutdown
+
+
+#######################################################
+
+
+G3-ASW-PRODUCTION:
+
+hostname G3-ASW-PRODUCTION
+
+
+snmp-server chassis-id G3-ASW-PRODUCTION
+spanning-tree mode rapid-pvst
+
+
+interface gig3/3
+description To_G3-MAIN-SW2
+switchport trunk encapsulation dot1q
+switchport mode trunk
+switchport trunk allowed vlan 10,20,30,40,50,60,70,80,90,100,3031
+switchport trunk native vlan 60
+no negotiation auto
+no spanning-tree portfast
+no spanning-tree bpduguard enable
+
+
+interface gig3/2
+description To_G3-ASW-WAREHOUSE
+switchport trunk encapsulation dot1q
+switchport mode trunk
+switchport trunk allowed vlan 10,20,30,40,50,60,70,80,90,100,3031
+switchport trunk native vlan 60
+no negotiation auto
+no spanning-tree portfast
+no spanning-tree bpduguard enable
+
+
+
+interface range gig0/0 - 3
+description Production
+switchport mode access
+switchport access vlan 100
+spanning-tree portfast
+spanning-tree bpduguard enable
+no cdp enable
+
+interface range gig1/0 - 3
+description Production
+switchport mode access
+switchport access vlan 100
+spanning-tree portfast
+spanning-tree bpduguard enable
+no cdp enable
+
+interface range gig2/0 - 3
+description Security
+switchport mode access
+switchport access vlan 70
+spanning-tree portfast
+spanning-tree bpduguard enable
+no cdp enable 
+
+
+ip default-gateway 10.130.31.1
+interface vlan 3031
+description ServerLAN_SVI
+ip address 10.130.31.7 255.255.255.0
+no shutdown
+
+#######################################################
+
+
+G3-ASW-WAREHOUSE:
+
+hostname G3-ASW-WAREHOUSE
+
+
+snmp-server chassis-id G3-ASW-WAREHOUSE
+spanning-tree mode rapid-pvst
+
+
+interface gig3/3
+description To_G3-MAIN-SW1
+switchport trunk encapsulation dot1q
+switchport mode trunk
+switchport trunk allowed vlan 10,20,30,40,50,60,70,80,90,100,3031
+switchport trunk native vlan 60
+no negotiation auto
+no spanning-tree portfast
+no spanning-tree bpduguard enable
+
+
+interface gig3/2
+description To_G3-ASW-PRODUCTION
+switchport trunk encapsulation dot1q
+switchport mode trunk
+switchport trunk allowed vlan 10,20,30,40,50,60,70,80,90,100,3031
+switchport trunk native vlan 60
+no negotiation auto
+no spanning-tree portfast
+no spanning-tree bpduguard enable
+
+
+
+interface range gig0/0 - 3
+description Warehouse
+switchport mode access
+switchport access vlan 90
+spanning-tree portfast
+spanning-tree bpduguard enable
+no cdp enable
+
+interface range gig1/0 - 3
+description Warehouse
+switchport mode access
+switchport access vlan 90
+spanning-tree portfast
+spanning-tree bpduguard enable
+no cdp enable
+
+interface range gig2/0 - 3
+description Security
+switchport mode access
+switchport access vlan 70
+spanning-tree portfast
+spanning-tree bpduguard enable
+no cdp enable
+
+ip default-gateway 10.130.31.1
+interface vlan 3031
+description ServerLAN_SVI
+ip address 10.130.31.8 255.255.255.0
+no shutdown
+
+#################################################
